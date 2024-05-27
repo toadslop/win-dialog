@@ -1,0 +1,9 @@
+[workspace]
+members = ["exec-test"]
+
+[package]
+name = "win_dialog"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
