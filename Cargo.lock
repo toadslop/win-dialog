@@ -3,13 +3,6 @@
 version = 3
 
 [[package]]
-name = "exec-test"
-version = "0.1.0"
-dependencies = [
- "win_dialog",
-]
-
-[[package]]
 name = "proc-macro2"
 version = "1.0.84"
 source = "registry+https://github.com/rust-lang/crates.io-index"
