@@ -69,7 +69,7 @@ impl WinDialog {
             "(New-Object -ComObject Wscript.Shell).popup({})",
             self.get_param_string()
         );
-        dbg!(&command);
+
         let output = Command::new("powershell.exe")
             .arg(command)
             .output()
@@ -118,7 +118,6 @@ impl TryFrom<&str> for DialogResponse {
     type Error = crate::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        dbg!(value);
         let code = value
             .parse::<u8>()
             .map_err(crate::Error::ParseResponseCodeFailure)?;
