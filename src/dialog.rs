@@ -41,11 +41,11 @@ impl WinDialog {
 
     /// Formats the params as a comma separated list in the correct order.
     fn get_param_string(self) -> String {
-        let mut params = [Some(format!("\"{}\"", self.content)), None, None, None];
+        let mut params = [Some(format!("'{}'", self.content)), None, None, None];
 
         if let Some(style) = self.style {
-            params[3] = Some(format!("\"{}\"", (style as usize)));
-            params[2] = Some(self.header.unwrap_or_default().to_string());
+            params[3] = Some(format!("'{}'", (style as usize)));
+            params[2] = Some(format!("'{}'", self.header.unwrap_or_default().to_string()));
             params[1] = Some(
                 self.display_duration
                     .unwrap_or_default()
@@ -69,7 +69,7 @@ impl WinDialog {
             "(New-Object -ComObject Wscript.Shell).popup({})",
             self.get_param_string()
         );
-
+        dbg!(&command);
         let output = Command::new("powershell.exe")
             .arg(command)
             .output()
