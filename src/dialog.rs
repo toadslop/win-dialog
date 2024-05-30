@@ -1,6 +1,6 @@
+use crate::style::{DialogStyle, OkClose};
 use std::fmt::Display;
 use std::{process::Command, time::Duration};
-use crate::style::{DialogStyle, OkClose};
 
 /// Represents the inputs for a Wscript.Shell popup.
 #[derive(Debug, Default, PartialEq)]
@@ -86,7 +86,7 @@ where
             "(New-Object -ComObject Wscript.Shell).popup({})",
             self.get_param_string()
         );
-        dbg!(&command);
+
         let output = Command::new("powershell.exe")
             .arg(command)
             .output()
@@ -148,11 +148,12 @@ impl TryFrom<&str> for AnyResponse {
 pub struct InputString(String);
 
 impl InputString {
+    const CHARS_TO_ESCAPE: [char; 3] = ['\'', '"', '`'];
     fn sanitize(&self) -> String {
         let mut init = String::with_capacity(self.0.len() + 2);
         init.push('"');
         let mut finish = self.0.chars().fold(init, |mut sanitized, char| {
-            if char == '\'' || char == '"' {
+            if Self::CHARS_TO_ESCAPE.contains(&char) {
                 sanitized.push('`');
             }
             sanitized.push(char);
