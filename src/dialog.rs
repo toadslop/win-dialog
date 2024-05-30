@@ -41,11 +41,11 @@ impl WinDialog {
 
     /// Formats the params as a comma separated list in the correct order.
     fn get_param_string(self) -> String {
-        let mut params = [Some(format!("'{}'", self.content)), None, None, None];
+        let mut params = [Some(self.content.to_string()), None, None, None];
 
         if let Some(style) = self.style {
             params[3] = Some(format!("'{}'", (style as usize)));
-            params[2] = Some(format!("'{}'", self.header.unwrap_or_default().to_string()));
+            params[2] = Some(self.header.unwrap_or_default().to_string());
             params[1] = Some(
                 self.display_duration
                     .unwrap_or_default()
@@ -144,6 +144,24 @@ impl TryFrom<&str> for DialogResponse {
 #[derive(Debug, PartialEq)]
 pub struct InputString(String);
 
+impl InputString {
+    fn sanitize(&self) -> String {
+        let mut init = String::with_capacity(self.0.len() + 2);
+        init.push('"');
+        let mut finish = self.0.chars().fold(init, |mut sanitized, char| {
+            if char == '\'' || char == '"' {
+                sanitized.push('`');
+            }
+            sanitized.push(char);
+            sanitized
+        });
+
+        finish.push('"');
+
+        finish
+    }
+}
+
 impl Default for InputString {
     fn default() -> Self {
         Self("\"\"".into())
@@ -152,7 +170,7 @@ impl Default for InputString {
 
 impl Display for InputString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.sanitize())
     }
 }
 
