@@ -1,22 +1,27 @@
 use std::fmt::Display;
 use std::{process::Command, time::Duration};
+use crate::style::{DialogStyle, OkClose};
 
 /// Represents the inputs for a Wscript.Shell popup.
 #[derive(Debug, Default, PartialEq)]
-pub struct WinDialog {
+pub struct WinDialog<T = OkClose>
+where
+    T: DialogStyle,
+{
     header: Option<InputString>,
     content: InputString,
     display_duration: Option<Duration>,
-    style: Option<DialogStyle>,
+    style: Option<T>,
 }
 
 impl WinDialog {
     /// Create a new dialog with content only. This will wait indefinitely
     /// for user input and will have a default windows title. It will display
     /// a simple popover with only an Ok button and a close icon in the top right.
-    pub fn new(content: impl Into<InputString>) -> Self {
+    pub fn new(content: impl Into<InputString>) -> WinDialog<OkClose> {
         Self {
             content: content.into(),
+            style: None,
             ..Default::default()
         }
     }
@@ -34,17 +39,29 @@ impl WinDialog {
     }
 
     /// Indicate which set of actions that you want the user to have.
-    pub fn with_style(mut self, style: impl Into<DialogStyle>) -> Self {
-        self.style = Some(style.into());
-        self
+    pub fn with_style<N>(self, style: N) -> WinDialog<N>
+    where
+        N: DialogStyle,
+    {
+        WinDialog::<N> {
+            header: self.header,
+            content: self.content,
+            display_duration: self.display_duration,
+            style: Some(style),
+        }
     }
+}
 
+impl<T> WinDialog<T>
+where
+    T: DialogStyle,
+{
     /// Formats the params as a comma separated list in the correct order.
     fn get_param_string(self) -> String {
         let mut params = [Some(self.content.to_string()), None, None, None];
 
-        if let Some(style) = self.style {
-            params[3] = Some(format!("'{}'", (style as usize)));
+        if let Some(..) = self.style {
+            params[3] = Some(format!("'{}'", T::style_code()));
             params[2] = Some(self.header.unwrap_or_default().to_string());
             params[1] = Some(
                 self.display_duration
@@ -64,12 +81,12 @@ impl WinDialog {
     }
 
     /// Display the dialog and convert results into proper [Result] type.
-    pub fn show(self) -> crate::Result {
+    pub fn show(self) -> crate::Result<T::Return> {
         let command = format!(
             "(New-Object -ComObject Wscript.Shell).popup({})",
             self.get_param_string()
         );
-
+        dbg!(&command);
         let output = Command::new("powershell.exe")
             .arg(command)
             .output()
@@ -81,28 +98,14 @@ impl WinDialog {
         }
 
         let code_raw = String::from_utf8(output.stdout).map_err(crate::Error::StdoutDecodeError)?;
-        let response = DialogResponse::try_from(&code_raw[0..code_raw.len() - 2])?;
+        let response = T::convert_response_code(&code_raw[0..code_raw.len() - 2])?;
         Ok(response)
     }
 }
 
-/// Indicates the response options provided for the user. Note that variants ending in "Close"
-/// provide an X icon in the top right corner of the dialog.
-#[derive(Debug, Default, PartialEq)]
-pub enum DialogStyle {
-    #[default]
-    OkClose = 64,
-    OkCancelClose = 65,
-    AbortRetryIgnore = 66,
-    YesNoCancelClose = 67,
-    YesNo = 68,
-    RetryCancelClose = 69,
-    CancelRetryContinueClose = 70,
-}
-
 /// Represents the possible responses from the user.
 #[derive(Debug, PartialEq)]
-pub enum DialogResponse {
+pub enum AnyResponse {
     Ok,
     Cancel,
     Abort,
@@ -114,7 +117,7 @@ pub enum DialogResponse {
     Continue,
 }
 
-impl TryFrom<&str> for DialogResponse {
+impl TryFrom<&str> for AnyResponse {
     type Error = crate::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
