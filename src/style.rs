@@ -4,15 +4,18 @@ use windows::Win32::UI::WindowsAndMessaging::{
     MESSAGEBOX_RESULT, MESSAGEBOX_STYLE,
 };
 
-/// Trait indicating the type of response a type of dialog returns,
+/// Trait indicating the type of response style of dialog returns,
 /// how to convert the raw response to the concrete return type, and
-/// how to convert the type into the style code that Powershell understands.
-pub trait DialogStyle: Sized + Default {
+/// how to convert the type into the style code Windows understands.
+pub trait DialogStyle: Sized + Default + Into<MESSAGEBOX_STYLE> {
     /// The concrete type that this style returns
     type Return: TryFrom<MESSAGEBOX_RESULT, Error = crate::Error>;
 
-    /// How to convert this type into the code that Powershell understands
-    fn style_code() -> MESSAGEBOX_STYLE;
+    /// A helper method to convert to the raw style code. Under the hood,
+    /// simply calls [Into]
+    fn style_code(self) -> MESSAGEBOX_STYLE {
+        self.into()
+    }
 }
 
 /// Represents a dialog with just an ok button and a close button. A peculiarity about
@@ -20,19 +23,22 @@ pub trait DialogStyle: Sized + Default {
 /// so only use this dialog for informative purposes, but never to allow the user the chance to
 /// make a choice.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
-pub struct OkClose;
+pub struct Ok_;
 
-impl DialogStyle for OkClose {
+impl DialogStyle for Ok_ {
     type Return = OkResponse;
+}
 
-    fn style_code() -> MESSAGEBOX_STYLE {
+impl From<Ok_> for MESSAGEBOX_STYLE {
+    fn from(_: Ok_) -> Self {
         MB_OK
     }
 }
 
-/// The possible return values for the [OkClose] dialog.
+/// The possible return values for the [Ok_] dialog.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OkResponse {
+    /// The user acknowledged the response.
     Ok,
 }
 
@@ -56,8 +62,10 @@ pub struct OkCancel;
 
 impl DialogStyle for OkCancel {
     type Return = OkCancelResponse;
+}
 
-    fn style_code() -> MESSAGEBOX_STYLE {
+impl From<OkCancel> for MESSAGEBOX_STYLE {
+    fn from(_: OkCancel) -> Self {
         MB_OKCANCEL
     }
 }
@@ -78,22 +86,27 @@ impl TryFrom<MESSAGEBOX_RESULT> for OkCancelResponse {
     }
 }
 
-/// The possible return values for [OkCancelClose]
+/// The possible return values for [OkCancel]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OkCancelResponse {
+    /// The user agreed to perform the action described by the message box's content.
     Ok,
+    /// The user does not want to perform the action described by the message box's content.
     Cancel,
 }
 
 /// Represents a dialog that requests user action in the case of an error. The user may choose
-/// to abort the action, retry it, or ignore the error.
+/// to abort the action, retry it, or ignore the error. This is typically used when a sequence
+/// of actions are being carried out and one step encountered an error.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct AbortRetryIgnore;
 
 impl DialogStyle for AbortRetryIgnore {
     type Return = AbortRetryIgnoreResponse;
+}
 
-    fn style_code() -> MESSAGEBOX_STYLE {
+impl From<AbortRetryIgnore> for MESSAGEBOX_STYLE {
+    fn from(_: AbortRetryIgnore) -> Self {
         MB_ABORTRETRYIGNORE
     }
 }
@@ -101,8 +114,11 @@ impl DialogStyle for AbortRetryIgnore {
 /// The possible return values for [AbortRetryIgnore]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AbortRetryIgnoreResponse {
+    /// The user wants to give up performing the action.
     Abort,
+    /// The user wants the action to be performed again.
     Retry,
+    /// The user wants to ignore the error but not retry the action.
     Ignore,
 }
 
@@ -124,7 +140,7 @@ impl TryFrom<MESSAGEBOX_RESULT> for AbortRetryIgnoreResponse {
     }
 }
 
-/// Represents a dialog where a user input is needed during an ongoing action. The user may accept
+/// Represents a dialog where a user input is needed during an ongoing series of actions. The user may accept
 /// the next action, reject the action, or cancel the process entirely. It also featuers an X button
 /// in the top right, which results in the same response code as 'cancel'.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -132,8 +148,10 @@ pub struct YesNoCancel;
 
 impl DialogStyle for YesNoCancel {
     type Return = YesNoCancelResponse;
+}
 
-    fn style_code() -> MESSAGEBOX_STYLE {
+impl From<YesNoCancel> for MESSAGEBOX_STYLE {
+    fn from(_: YesNoCancel) -> Self {
         MB_YESNOCANCEL
     }
 }
@@ -156,22 +174,28 @@ impl TryFrom<MESSAGEBOX_RESULT> for YesNoCancelResponse {
     }
 }
 
-/// Possible responses for [YesNoCancelClose]
+/// Possible responses for [YesNoCancel]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum YesNoCancelResponse {
+    /// The user accepts the proposed action. Proceed to the next step in the series of actions.
     Yes,
+    /// The user rejects the prososed action. Continue to the next action.
     No,
+    /// The user rejects the proposed action. Do not proceed to the next step.
     Cancel,
 }
 
-/// Displays a dialog with only two buttons, yes and no.
+/// Displays a dialog with only two buttons, yes and no. Used in cases where there is only as single
+/// action to be performed.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct YesNo;
 
 impl DialogStyle for YesNo {
     type Return = YesNoResponse;
+}
 
-    fn style_code() -> MESSAGEBOX_STYLE {
+impl From<YesNo> for MESSAGEBOX_STYLE {
+    fn from(_: YesNo) -> Self {
         MB_YESNO
     }
 }
@@ -179,7 +203,9 @@ impl DialogStyle for YesNo {
 /// Possible resonses to [YesNo]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum YesNoResponse {
+    /// The user accepts the proposed action.
     Yes,
+    /// The user rejects the proposed action.
     No,
 }
 
@@ -200,22 +226,27 @@ impl TryFrom<MESSAGEBOX_RESULT> for YesNoResponse {
 }
 
 /// Presents two buttons: retry or cancel. It also has an X button at the top right, which
-/// returns the same response as 'cancel'.
+/// returns the same response as 'cancel'. Use in cases where only a single action occurs
+/// rather than a sequence of actions.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct RetryCancel;
 
 impl DialogStyle for RetryCancel {
     type Return = RetryCancelResponse;
+}
 
-    fn style_code() -> MESSAGEBOX_STYLE {
+impl From<RetryCancel> for MESSAGEBOX_STYLE {
+    fn from(_: RetryCancel) -> Self {
         MB_RETRYCANCEL
     }
 }
 
-/// Possible responses for [RetryCancelClose]
+/// Possible responses for [RetryCancel]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RetryCancelResponse {
+    /// The user indicated a desire to try the operation again.
     Retry,
+    /// The user indicated a desire to abandon the process after a failure.
     Cancel,
 }
 
@@ -242,17 +273,22 @@ pub struct CancelRetryContinue;
 
 impl DialogStyle for CancelRetryContinue {
     type Return = CancelRetryContinueResponse;
+}
 
-    fn style_code() -> MESSAGEBOX_STYLE {
+impl From<CancelRetryContinue> for MESSAGEBOX_STYLE {
+    fn from(_: CancelRetryContinue) -> Self {
         MB_CANCELTRYCONTINUE
     }
 }
 
-/// Possile responses to [CancelRetryContinueClose]
+/// Possile responses to [CancelRetryContinue]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CancelRetryContinueResponse {
+    /// The user indicates a desire to abandon the sequences of actions entirely.
     Cancel,
+    /// The user indicates a desire to retry a failed action.
     Retry,
+    /// The user indicates a desire to perform the next action despite the failure of the previous.
     Continue,
 }
 
