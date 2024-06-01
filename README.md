@@ -34,3 +34,8 @@ fn main() {
     println!("{res:?}");
 }
 ```
+
+## Possible Future Features
+
+- Dialog timeouts
+- Async interface
