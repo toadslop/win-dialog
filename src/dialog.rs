@@ -1,6 +1,7 @@
 use std::ffi::CString;
 use std::time::Duration;
 use windows::core::PCSTR;
+use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{MessageBoxA, MB_ICONEXCLAMATION};
 
 use crate::style::DialogStyle;
@@ -16,6 +17,7 @@ where
     content: String,
     display_duration: Option<Duration>,
     style: T,
+    window_handle: Option<HWND>,
 }
 
 impl WinDialog {
@@ -47,6 +49,13 @@ where
         self
     }
 
+    /// A handle to the owner window of the message box to be created.
+    /// If this parameter is [None], the message box has no owner window.
+    pub fn with_handle(mut self, handle: impl Into<HWND>) -> Self {
+        self.window_handle = Some(handle.into());
+        self
+    }
+
     /// Indicate which set of actions that you want the user to have.
     pub fn with_style<N>(self, style: N) -> WinDialog<N>
     where
@@ -57,6 +66,7 @@ where
             content: self.content,
             display_duration: self.display_duration,
             style,
+            window_handle: self.window_handle,
         }
     }
 
