@@ -3,7 +3,7 @@ use windows::core::PCSTR;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
     MessageBoxA, MB_DEFAULT_DESKTOP_ONLY, MB_DEFBUTTON1, MB_DEFBUTTON2, MB_DEFBUTTON3,
-    MB_DEFBUTTON4, MB_HELP, MB_RIGHT, MESSAGEBOX_STYLE,
+    MB_DEFBUTTON4, MB_HELP, MB_RIGHT, MB_RTLREADING, MESSAGEBOX_STYLE,
 };
 
 use crate::icon::Icon;
@@ -55,6 +55,8 @@ where
     default_desktop_only: bool,
 
     right_justify_text: bool,
+
+    right_to_left_reading: bool,
 }
 
 impl WinDialog {
@@ -117,9 +119,15 @@ where
         self
     }
 
-    /// Set the text to right-justify style
+    /// Set the text to right-justify style.
     pub fn set_right_justify(mut self) -> Self {
         self.right_justify_text = true;
+        self
+    }
+
+    /// Displays message and caption text using right-to-left reading order on Hebrew and Arabic systems.
+    pub fn set_right_to_left_reading(mut self) -> Self {
+        self.right_to_left_reading = true;
         self
     }
 
@@ -133,6 +141,7 @@ where
             header: self.header,
             content: self.content,
             style,
+            right_to_left_reading: self.right_to_left_reading,
             icon: self.icon,
             default_button: self.default_button,
             modality: self.modality,
@@ -169,6 +178,10 @@ where
             true => MB_RIGHT,
             false => MESSAGEBOX_STYLE::default(),
         };
+        let right_to_left_reading = match self.right_to_left_reading {
+            true => MB_RTLREADING,
+            false => MESSAGEBOX_STYLE::default(),
+        };
 
         let result = unsafe {
             MessageBoxA(
@@ -180,7 +193,8 @@ where
                     | help_button
                     | default_button
                     | default_deskop_only
-                    | right_justify,
+                    | right_justify
+                    | right_to_left_reading,
             )
         };
 
@@ -317,6 +331,12 @@ where
         self
     }
 
+    /// Displays message and caption text using right-to-left reading order on Hebrew and Arabic systems.
+    pub fn set_right_to_left_reading(mut self) -> Self {
+        self.inner.right_to_left_reading = true;
+        self
+    }
+
     /// Indicate which set of actions that you want the user to have. Check the available
     /// options in [crate::style].
     pub fn with_style<N>(self, style: N) -> WinDialogWithParent<N>
@@ -328,6 +348,7 @@ where
                 header: self.inner.header,
                 content: self.inner.content,
                 style,
+                right_to_left_reading: self.inner.right_to_left_reading,
                 modality: self.inner.modality,
                 icon: self.inner.icon,
                 default_button: self.inner.default_button,
