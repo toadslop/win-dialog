@@ -18,3 +18,19 @@ You have the ability to make the following changes:
 - Change the body text
 - Choose the available buttons from among a fixed set. You cannot edit button text
 - Change the icon (or display no icon)
+
+## Usage
+
+```rust
+use win_dialog::{style, Icon, WinDialog};
+
+fn main() {
+    let res =
+        WinDialog::new("We encountered an error during installation. What would you like to do?")
+            .with_style(style::AbortRetryIgnore)
+            .with_icon(Icon::Hand)
+            .show()
+            .unwrap();
+    println!("{res:?}");
+}
+```
