@@ -5,7 +5,8 @@ mod modality;
 pub mod style;
 
 // pub use dialog::AnyResponse;
-pub use dialog::WinDialog;
+pub use dialog::{WinDialog, WinDialogWithParent};
 pub use error::Error;
 pub type Result<T = style::OkCancelResponse> = std::result::Result<T, crate::error::Error>;
 pub use icon::Icon;
+pub use modality::Modality;
