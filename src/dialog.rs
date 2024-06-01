@@ -3,7 +3,7 @@ use windows::core::PCSTR;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
     MessageBoxA, MB_DEFAULT_DESKTOP_ONLY, MB_DEFBUTTON1, MB_DEFBUTTON2, MB_DEFBUTTON3,
-    MB_DEFBUTTON4, MB_HELP, MESSAGEBOX_STYLE,
+    MB_DEFBUTTON4, MB_HELP, MB_RIGHT, MESSAGEBOX_STYLE,
 };
 
 use crate::icon::Icon;
@@ -53,6 +53,8 @@ where
     modality: Modality,
 
     default_desktop_only: bool,
+
+    right_justify_text: bool,
 }
 
 impl WinDialog {
@@ -115,6 +117,12 @@ where
         self
     }
 
+    /// Set the text to right-justify style
+    pub fn set_right_justify(mut self) -> Self {
+        self.right_justify_text = true;
+        self
+    }
+
     /// Indicate which set of actions that you want the user to have. Check the available
     /// options in [crate::style].
     pub fn with_style<N>(self, style: N) -> WinDialog<N>
@@ -129,6 +137,7 @@ where
             default_button: self.default_button,
             modality: self.modality,
             default_desktop_only: self.default_desktop_only,
+            right_justify_text: self.right_justify_text,
         }
     }
 
@@ -156,13 +165,22 @@ where
             true => MB_DEFAULT_DESKTOP_ONLY,
             false => MESSAGEBOX_STYLE::default(),
         };
+        let right_justify = match self.right_justify_text {
+            true => MB_RIGHT,
+            false => MESSAGEBOX_STYLE::default(),
+        };
 
         let result = unsafe {
             MessageBoxA(
                 None,
                 content_ptr,
                 header_ptr.as_ref(),
-                self.style.into() | icon | help_button | default_button | default_deskop_only,
+                self.style.into()
+                    | icon
+                    | help_button
+                    | default_button
+                    | default_deskop_only
+                    | right_justify,
             )
         };
 
@@ -293,6 +311,12 @@ where
         self
     }
 
+    /// Set the text to right-justify style
+    pub fn set_right_justify(mut self) -> Self {
+        self.inner.right_justify_text = true;
+        self
+    }
+
     /// Indicate which set of actions that you want the user to have. Check the available
     /// options in [crate::style].
     pub fn with_style<N>(self, style: N) -> WinDialogWithParent<N>
@@ -308,6 +332,7 @@ where
                 icon: self.inner.icon,
                 default_button: self.inner.default_button,
                 default_desktop_only: self.inner.default_desktop_only,
+                right_justify_text: self.inner.right_justify_text,
             },
             window_handle: self.window_handle,
             show_help_button: self.show_help_button,
