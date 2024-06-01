@@ -1,6 +1,7 @@
 mod dialog;
 mod error;
 mod icon;
+mod modality;
 pub mod style;
 
 // pub use dialog::AnyResponse;

@@ -2,10 +2,12 @@ use std::ffi::CString;
 use windows::core::PCSTR;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
-    MessageBoxA, MB_DEFBUTTON2, MB_DEFBUTTON3, MB_DEFBUTTON4, MB_HELP, MESSAGEBOX_STYLE,
+    MessageBoxA, MB_DEFBUTTON1, MB_DEFBUTTON2, MB_DEFBUTTON3, MB_DEFBUTTON4, MB_HELP,
+    MESSAGEBOX_STYLE,
 };
 
 use crate::icon::Icon;
+use crate::modality::Modality;
 use crate::style::DialogStyle;
 use crate::style::{
     AbortRetryIgnore, CancelRetryContinue, OkCancel, RetryCancel, YesNo, YesNoCancel,
@@ -43,7 +45,11 @@ where
     /// for the available options.
     style: T,
 
+    /// Indicates which button is by default selected (i.e. if the user pressed 'enter'
+    /// without doing anything else, which button would be pressed)
     default_button: MESSAGEBOX_STYLE,
+
+    modality: Modality,
 }
 
 impl WinDialog {
@@ -77,15 +83,24 @@ where
     }
 
     /// A handle to the owner window of the message box to be created.
-    /// If this parameter is [None], the message box has no owner window.
-    /// In most cases that this crate is designed for, you wouldn't need this parameter,
-    /// but it is included for completeness.
-    pub fn with_handle(self, handle: impl Into<HWND>) -> WinDialogWithParent<T> {
+    /// If you don't call this method and provide a handle to the owner window,
+    /// the Message Box will have no parent window.
+    ///
+    /// Attaching a parent window will allow you to add an extra 'help' button
+    /// to the message box. See [WinDialogWithParent::with_help_button] for more
+    /// information.
+    pub fn set_parent_window(self, handle: impl Into<HWND>) -> WinDialogWithParent<T> {
         WinDialogWithParent {
             inner: self,
             window_handle: handle.into(),
             ..Default::default()
         }
+    }
+
+    /// Indicate the modality of the dialog box. See [Modality] for the options.
+    pub fn set_modality(mut self, modality: Modality) -> Self {
+        self.modality = modality;
+        self
     }
 
     /// Indicate which set of actions that you want the user to have. Check the available
@@ -100,6 +115,7 @@ where
             style,
             icon: self.icon,
             default_button: self.default_button,
+            modality: self.modality,
         }
     }
 
@@ -194,6 +210,7 @@ impl WinDialog<CancelRetryContinue> {
     }
 }
 
+/// A Message Box with an attached parent window.
 #[derive(Debug, Default, PartialEq)]
 pub struct WinDialogWithParent<T>
 where
@@ -213,6 +230,9 @@ impl<T> WinDialogWithParent<T>
 where
     T: DialogStyle,
 {
+    /// Adds a Help button to the message box. When the user clicks the Help button
+    /// or presses F1, the system sends a [WM_HELP](https://learn.microsoft.com/en-us/windows/win32/shell/wm-help)
+    /// message to the parent window.
     pub fn with_help_button(mut self) -> Self {
         self.show_help_button = true;
         self
@@ -231,6 +251,7 @@ where
         self
     }
 
+    /// Display the message box.
     pub fn show(self) -> ShowReturn<T> {
         let help_button = match self.show_help_button {
             true => MB_HELP,
@@ -238,6 +259,12 @@ where
         };
 
         self.inner.show_inner(help_button)
+    }
+
+    /// Indicate the modality of the dialog box. See [Modality] for the options.
+    pub fn set_modality(mut self, modality: Modality) -> Self {
+        self.inner.modality = modality;
+        self
     }
 
     /// Indicate which set of actions that you want the user to have. Check the available
@@ -251,6 +278,7 @@ where
                 header: self.inner.header,
                 content: self.inner.content,
                 style,
+                modality: self.inner.modality,
                 icon: self.inner.icon,
                 default_button: self.inner.default_button,
             },
@@ -331,16 +359,25 @@ impl WinDialogWithParent<RetryCancel> {
 }
 
 impl WinDialogWithParent<CancelRetryContinue> {
+    /// Set the default button to cancel.
+    pub fn set_default_cancel(mut self) -> Self {
+        self.inner.default_button = MB_DEFBUTTON1;
+        self
+    }
+
+    /// Set the default button to help.
     pub fn set_default_help(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON4;
         self
     }
 
+    /// Set the default button to retry.
     pub fn set_default_retry(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON2;
         self
     }
 
+    /// Set the default button to continue.
     pub fn set_default_continue(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON3;
         self
