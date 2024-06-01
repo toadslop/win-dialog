@@ -1,6 +1,6 @@
 [package]
 name = "win_dialog"
-version = "0.5.4"
+version = "0.5.5"
 edition = "2021"
 authors = ["Brian Heise <bnheise@gmail.com"]
 description = "An idiomatic wrapper around windows MessageBox function for providing message dialogs in Windows."
