@@ -3,7 +3,7 @@ use windows::core::PCSTR;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
     MessageBoxA, MB_DEFAULT_DESKTOP_ONLY, MB_DEFBUTTON1, MB_DEFBUTTON2, MB_DEFBUTTON3,
-    MB_DEFBUTTON4, MB_HELP, MB_RIGHT, MB_RTLREADING, MESSAGEBOX_STYLE,
+    MB_DEFBUTTON4, MB_HELP, MB_RIGHT, MB_RTLREADING, MB_SETFOREGROUND, MESSAGEBOX_STYLE,
 };
 
 use crate::icon::Icon;
@@ -57,6 +57,8 @@ where
     right_justify_text: bool,
 
     right_to_left_reading: bool,
+
+    foreground: bool,
 }
 
 impl WinDialog {
@@ -131,6 +133,13 @@ where
         self
     }
 
+    /// The message box becomes the foreground window. Internally, the system calls the
+    /// [SetForegroundWindow](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setforegroundwindow) function for the message box.
+    pub fn set_foreground(mut self) -> Self {
+        self.foreground = true;
+        self
+    }
+
     /// Indicate which set of actions that you want the user to have. Check the available
     /// options in [crate::style].
     pub fn with_style<N>(self, style: N) -> WinDialog<N>
@@ -141,6 +150,7 @@ where
             header: self.header,
             content: self.content,
             style,
+            foreground: self.foreground,
             right_to_left_reading: self.right_to_left_reading,
             icon: self.icon,
             default_button: self.default_button,
@@ -183,6 +193,11 @@ where
             false => MESSAGEBOX_STYLE::default(),
         };
 
+        let foreground = match self.foreground {
+            true => MB_SETFOREGROUND,
+            false => MESSAGEBOX_STYLE::default(),
+        };
+
         let result = unsafe {
             MessageBoxA(
                 None,
@@ -194,7 +209,8 @@ where
                     | default_button
                     | default_deskop_only
                     | right_justify
-                    | right_to_left_reading,
+                    | right_to_left_reading
+                    | foreground,
             )
         };
 
@@ -337,6 +353,13 @@ where
         self
     }
 
+    /// The message box becomes the foreground window. Internally, the system calls the
+    /// [SetForegroundWindow](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setforegroundwindow) function for the message box.
+    pub fn set_foreground(mut self) -> Self {
+        self.inner.foreground = true;
+        self
+    }
+
     /// Indicate which set of actions that you want the user to have. Check the available
     /// options in [crate::style].
     pub fn with_style<N>(self, style: N) -> WinDialogWithParent<N>
@@ -354,6 +377,7 @@ where
                 default_button: self.inner.default_button,
                 default_desktop_only: self.inner.default_desktop_only,
                 right_justify_text: self.inner.right_justify_text,
+                foreground: self.inner.foreground,
             },
             window_handle: self.window_handle,
             show_help_button: self.show_help_button,
