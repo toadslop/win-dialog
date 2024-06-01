@@ -1,4 +1,4 @@
-use std::{io, num::ParseIntError, string::FromUtf8Error};
+use std::{ffi::NulError, io, num::ParseIntError, string::FromUtf8Error};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -11,5 +11,7 @@ pub enum Error {
     #[error("Failed parse the response code")]
     ParseResponseCodeFailure(#[source] ParseIntError),
     #[error("Dialog returned unknown response code: {0}")]
-    UnknownResponseCode(u8),
+    UnknownResponseCode(i32),
+    #[error("String could not be converted to C-string: {0}")]
+    InvalidString(#[from] NulError),
 }

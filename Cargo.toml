@@ -3,9 +3,10 @@ name = "win_dialog"
 version = "0.2.1"
 edition = "2021"
 authors = ["Brian Heise <bnheise@gmail.com"]
-description = "A wrapper around powershell's Wscript.Shell.popup function for providing dialog boxes in Windows."
+description = "An idiomatic wrapper around windows MessageBox function for providing message dialogs in Windows."
 repository = "https://github.com/toadslop/win-dialog"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
 thiserror = "1.0.61"
+windows = { version = "0.56.0", features = ["Win32_UI_WindowsAndMessaging"] }
