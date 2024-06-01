@@ -3,7 +3,8 @@ use windows::core::PCSTR;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
     MessageBoxA, MB_DEFAULT_DESKTOP_ONLY, MB_DEFBUTTON1, MB_DEFBUTTON2, MB_DEFBUTTON3,
-    MB_DEFBUTTON4, MB_HELP, MB_RIGHT, MB_RTLREADING, MB_SETFOREGROUND, MESSAGEBOX_STYLE,
+    MB_DEFBUTTON4, MB_HELP, MB_RIGHT, MB_RTLREADING, MB_SERVICE_NOTIFICATION, MB_SETFOREGROUND,
+    MB_TOPMOST, MESSAGEBOX_STYLE,
 };
 
 use crate::icon::Icon;
@@ -53,12 +54,11 @@ where
     modality: Modality,
 
     default_desktop_only: bool,
-
     right_justify_text: bool,
-
     right_to_left_reading: bool,
-
     foreground: bool,
+    topmost: bool,
+    is_service_notification: bool,
 }
 
 impl WinDialog {
@@ -98,7 +98,8 @@ where
     /// Attaching a parent window will allow you to add an extra 'help' button
     /// to the message box. See [WinDialogWithParent::with_help_button] for more
     /// information.
-    pub fn set_parent_window(self, handle: impl Into<HWND>) -> WinDialogWithParent<T> {
+    pub fn set_parent_window(mut self, handle: impl Into<HWND>) -> WinDialogWithParent<T> {
+        self.is_service_notification = false;
         WinDialogWithParent {
             inner: self,
             window_handle: handle.into(),
@@ -140,6 +141,31 @@ where
         self
     }
 
+    /// The message box is created with the WS_EX_TOPMOST window style.
+    pub fn set_topmost(mut self) -> Self {
+        self.topmost = true;
+        self
+    }
+
+    /// The caller is a service notifying the user of an event. The function displays a message
+    /// box on the current active desktop, even if there is no user logged on to the computer.
+
+    /// Terminal Services: If the calling thread has an impersonation token, the function directs
+    /// the message box to the session specified in the impersonation token.
+    ///
+    /// If this function is set, the window must not have a parent. This is so that the message box
+    /// can appear on a desktop other than the desktop corresponding to the parent window.
+    /// For this reason, if you call [WinDialog::set_parent_window], this parameter will be unset.
+    ///
+    /// For information on security considerations in regard to using this flag, see
+    /// [Interactive Services](https://learn.microsoft.com/en-us/windows/win32/services/interactive-services).
+    /// In particular, be aware that this flag can produce interactive content on a locked desktop and
+    /// should therefore be used for only a very limited set of scenarios, such as resource exhaustion.
+    pub fn make_service_notification(mut self) -> Self {
+        self.is_service_notification = true;
+        self
+    }
+
     /// Indicate which set of actions that you want the user to have. Check the available
     /// options in [crate::style].
     pub fn with_style<N>(self, style: N) -> WinDialog<N>
@@ -155,6 +181,8 @@ where
             icon: self.icon,
             default_button: self.default_button,
             modality: self.modality,
+            topmost: self.topmost,
+            is_service_notification: self.is_service_notification,
             default_desktop_only: self.default_desktop_only,
             right_justify_text: self.right_justify_text,
         }
@@ -198,6 +226,16 @@ where
             false => MESSAGEBOX_STYLE::default(),
         };
 
+        let topmost = match self.topmost {
+            true => MB_TOPMOST,
+            false => MESSAGEBOX_STYLE::default(),
+        };
+
+        let is_service_notif = match self.is_service_notification {
+            true => MB_SERVICE_NOTIFICATION,
+            false => MESSAGEBOX_STYLE::default(),
+        };
+
         let result = unsafe {
             MessageBoxA(
                 None,
@@ -210,7 +248,9 @@ where
                     | default_deskop_only
                     | right_justify
                     | right_to_left_reading
-                    | foreground,
+                    | foreground
+                    | topmost
+                    | is_service_notif,
             )
         };
 
@@ -360,6 +400,12 @@ where
         self
     }
 
+    /// The message box is created with the WS_EX_TOPMOST window style.
+    pub fn set_topmost(mut self) -> Self {
+        self.inner.topmost = true;
+        self
+    }
+
     /// Indicate which set of actions that you want the user to have. Check the available
     /// options in [crate::style].
     pub fn with_style<N>(self, style: N) -> WinDialogWithParent<N>
@@ -371,6 +417,8 @@ where
                 header: self.inner.header,
                 content: self.inner.content,
                 style,
+                topmost: self.inner.topmost,
+                is_service_notification: false,
                 right_to_left_reading: self.inner.right_to_left_reading,
                 modality: self.inner.modality,
                 icon: self.inner.icon,
