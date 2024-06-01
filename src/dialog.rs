@@ -2,8 +2,8 @@ use std::ffi::CString;
 use windows::core::PCSTR;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
-    MessageBoxA, MB_DEFBUTTON1, MB_DEFBUTTON2, MB_DEFBUTTON3, MB_DEFBUTTON4, MB_HELP,
-    MESSAGEBOX_STYLE,
+    MessageBoxA, MB_DEFAULT_DESKTOP_ONLY, MB_DEFBUTTON1, MB_DEFBUTTON2, MB_DEFBUTTON3,
+    MB_DEFBUTTON4, MB_HELP, MESSAGEBOX_STYLE,
 };
 
 use crate::icon::Icon;
@@ -49,7 +49,10 @@ where
     /// without doing anything else, which button would be pressed)
     default_button: MESSAGEBOX_STYLE,
 
+    /// Indicates the modality of the box.
     modality: Modality,
+
+    default_desktop_only: bool,
 }
 
 impl WinDialog {
@@ -103,6 +106,15 @@ where
         self
     }
 
+    /// Same as desktop of the interactive window station. For more information, see
+    /// [Window Stations](https://learn.microsoft.com/en-us/windows/win32/winstation/window-stations).
+    /// If the current input desktop is not the default desktop, the Message Box does not return until the
+    /// user switches to the default desktop.
+    pub fn set_default_desktop_only(mut self) -> Self {
+        self.default_desktop_only = true;
+        self
+    }
+
     /// Indicate which set of actions that you want the user to have. Check the available
     /// options in [crate::style].
     pub fn with_style<N>(self, style: N) -> WinDialog<N>
@@ -116,6 +128,7 @@ where
             icon: self.icon,
             default_button: self.default_button,
             modality: self.modality,
+            default_desktop_only: self.default_desktop_only,
         }
     }
 
@@ -139,13 +152,17 @@ where
 
         let icon = self.icon.map(MESSAGEBOX_STYLE::from).unwrap_or_default();
         let default_button = self.default_button;
+        let default_deskop_only = match self.default_desktop_only {
+            true => MB_DEFAULT_DESKTOP_ONLY,
+            false => MESSAGEBOX_STYLE::default(),
+        };
 
         let result = unsafe {
             MessageBoxA(
                 None,
                 content_ptr,
                 header_ptr.as_ref(),
-                self.style.into() | icon | help_button | default_button,
+                self.style.into() | icon | help_button | default_button | default_deskop_only,
             )
         };
 
@@ -267,6 +284,15 @@ where
         self
     }
 
+    /// Same as desktop of the interactive window station. For more information, see
+    /// [Window Stations](https://learn.microsoft.com/en-us/windows/win32/winstation/window-stations).
+    /// If the current input desktop is not the default desktop, the Message Box does not return until the
+    /// user switches to the default desktop.
+    pub fn set_default_desktop_only(mut self) -> Self {
+        self.inner.default_desktop_only = true;
+        self
+    }
+
     /// Indicate which set of actions that you want the user to have. Check the available
     /// options in [crate::style].
     pub fn with_style<N>(self, style: N) -> WinDialogWithParent<N>
@@ -281,6 +307,7 @@ where
                 modality: self.inner.modality,
                 icon: self.inner.icon,
                 default_button: self.inner.default_button,
+                default_desktop_only: self.inner.default_desktop_only,
             },
             window_handle: self.window_handle,
             show_help_button: self.show_help_button,
