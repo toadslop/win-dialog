@@ -457,7 +457,7 @@ where
 }
 
 impl WinDialogWithParent<OkCancel> {
-    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::show_help_button] has not
+    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::with_help_button] has not
     /// been called.
     pub fn set_default_help(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON3;
@@ -472,7 +472,7 @@ impl WinDialogWithParent<OkCancel> {
 }
 
 impl WinDialogWithParent<AbortRetryIgnore> {
-    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::show_help_button] has not
+    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::with_help_button] has not
     /// been called.
     pub fn set_default_help(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON4;
@@ -493,7 +493,7 @@ impl WinDialogWithParent<AbortRetryIgnore> {
 }
 
 impl WinDialogWithParent<YesNoCancel> {
-    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::show_help_button] has not
+    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::with_help_button] has not
     /// been called.
     pub fn set_default_help(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON4;
@@ -514,7 +514,7 @@ impl WinDialogWithParent<YesNoCancel> {
 }
 
 impl WinDialogWithParent<YesNo> {
-    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::show_help_button] has not
+    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::with_help_button] has not
     /// been called.
     pub fn set_default_help(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON3;
@@ -529,7 +529,7 @@ impl WinDialogWithParent<YesNo> {
 }
 
 impl WinDialogWithParent<RetryCancel> {
-    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::show_help_button] has not
+    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::with_help_button] has not
     /// been called.
     pub fn set_default_help(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON3;
