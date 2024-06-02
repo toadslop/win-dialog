@@ -14,6 +14,7 @@ use crate::style::{
     AbortRetryIgnore, CancelRetryContinue, OkCancel, RetryCancel, YesNo, YesNoCancel,
 };
 
+/// Alias used to indicate the common return type for the two [WinDialog] and [WinDialogWithParent].
 type ShowReturn<T> = crate::Result<<T as DialogStyle>::Return>;
 
 /// A builder struct used for configuring a [MessageBox](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-messageboxa).
@@ -53,11 +54,22 @@ where
     /// Indicates the modality of the box.
     modality: Modality,
 
+    /// Same as desktop of the interactive window station. See [WinDialog::set_default_desktop_only]
     default_desktop_only: bool,
+
+    /// Will display text in right-justified fashion.
     right_justify_text: bool,
+
+    /// Will display in right-to-left style
     right_to_left_reading: bool,
+
+    /// The message box will become the foreground window.
     foreground: bool,
+
+    /// The message box will be created with the WS_EX_TOPMOST window style.
     topmost: bool,
+
+    /// The caller is a service notifying the user of an event.
     is_service_notification: bool,
 }
 
@@ -194,6 +206,8 @@ where
         self.show_inner(Default::default())
     }
 
+    /// Converts the Rust types to their C counterparts and invokes the MessageBox
+    /// api.
     fn show_inner(self, help_button: MESSAGEBOX_STYLE) -> crate::Result<T::Return> {
         let content = CString::new(self.content.to_string())?;
         let content_ptr = PCSTR::from_raw(content.as_ptr() as *const u8);
@@ -259,6 +273,7 @@ where
 }
 
 impl WinDialog<OkCancel> {
+    /// Make [crate::style::OkCancelResponse::Cancel] the default response,
     pub fn set_default_cancel(mut self) -> Self {
         self.default_button = MB_DEFBUTTON2;
         self
@@ -266,11 +281,13 @@ impl WinDialog<OkCancel> {
 }
 
 impl WinDialog<AbortRetryIgnore> {
+    /// Make [crate::style::AbortRetryIgnoreResponse::Retry] the default response,
     pub fn set_default_retry(mut self) -> Self {
         self.default_button = MB_DEFBUTTON2;
         self
     }
 
+    /// Make [crate::style::AbortRetryIgnoreResponse::Ignore] the default response,
     pub fn set_default_ignore(mut self) -> Self {
         self.default_button = MB_DEFBUTTON3;
         self
@@ -278,11 +295,13 @@ impl WinDialog<AbortRetryIgnore> {
 }
 
 impl WinDialog<YesNoCancel> {
+    /// Make [crate::style::YesNoCancelResponse::No] the default response,
     pub fn set_default_no(mut self) -> Self {
         self.default_button = MB_DEFBUTTON2;
         self
     }
 
+    /// Make [crate::style::YesNoCancelResponse::Cancel] the default response.
     pub fn set_default_cancel(mut self) -> Self {
         self.default_button = MB_DEFBUTTON3;
         self
@@ -290,6 +309,7 @@ impl WinDialog<YesNoCancel> {
 }
 
 impl WinDialog<YesNo> {
+    /// Make [crate::style::YesNoResponse::No] the default response.
     pub fn set_default_no(mut self) -> Self {
         self.default_button = MB_DEFBUTTON2;
         self
@@ -297,6 +317,7 @@ impl WinDialog<YesNo> {
 }
 
 impl WinDialog<RetryCancel> {
+    /// Make [crate::style::RetryCancelResponse::Cancel] the default response.
     pub fn set_default_cancel(mut self) -> Self {
         self.default_button = MB_DEFBUTTON2;
         self
@@ -304,11 +325,13 @@ impl WinDialog<RetryCancel> {
 }
 
 impl WinDialog<CancelRetryContinue> {
+    /// Make [crate::style::CancelRetryContinueResponse::Retry] the default response.
     pub fn set_default_retry(mut self) -> Self {
         self.default_button = MB_DEFBUTTON2;
         self
     }
 
+    /// Make [crate::style::CancelRetryContinueResponse::Continue] the default response.
     pub fn set_default_continue(mut self) -> Self {
         self.default_button = MB_DEFBUTTON3;
         self
@@ -434,11 +457,14 @@ where
 }
 
 impl WinDialogWithParent<OkCancel> {
+    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::show_help_button] has not
+    /// been called.
     pub fn set_default_help(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON3;
         self
     }
 
+    /// Make [crate::style::OkCancelResponse::Cancel] the default response.
     pub fn set_default_cancel(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON2;
         self
@@ -446,16 +472,20 @@ impl WinDialogWithParent<OkCancel> {
 }
 
 impl WinDialogWithParent<AbortRetryIgnore> {
+    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::show_help_button] has not
+    /// been called.
     pub fn set_default_help(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON4;
         self
     }
 
+    /// Make [crate::style::AbortRetryIgnoreResponse::Retry] the default response.
     pub fn set_default_retry(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON2;
         self
     }
 
+    /// Make [crate::style::AbortRetryIgnoreResponse::Ignore] the default response.
     pub fn set_default_ignore(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON3;
         self
@@ -463,16 +493,20 @@ impl WinDialogWithParent<AbortRetryIgnore> {
 }
 
 impl WinDialogWithParent<YesNoCancel> {
+    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::show_help_button] has not
+    /// been called.
     pub fn set_default_help(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON4;
         self
     }
 
+    /// Make [crate::style::YesNoCancelResponse::No] the default response.
     pub fn set_default_no(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON2;
         self
     }
 
+    /// Make [crate::style::YesNoCancelResponse::Cancel] the default response.
     pub fn set_default_cancel(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON3;
         self
@@ -480,11 +514,14 @@ impl WinDialogWithParent<YesNoCancel> {
 }
 
 impl WinDialogWithParent<YesNo> {
+    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::show_help_button] has not
+    /// been called.
     pub fn set_default_help(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON3;
         self
     }
 
+    /// Make [crate::style::YesNoResponse::No] the default response.
     pub fn set_default_no(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON2;
         self
@@ -492,11 +529,14 @@ impl WinDialogWithParent<YesNo> {
 }
 
 impl WinDialogWithParent<RetryCancel> {
+    /// Sets the help button as default. Will do nothing if [WinDialogWithParent::show_help_button] has not
+    /// been called.
     pub fn set_default_help(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON3;
         self
     }
 
+    /// Make [crate::style::RetryCancelResponse::Cancel] the default response.
     pub fn set_default_cancel(mut self) -> Self {
         self.inner.default_button = MB_DEFBUTTON2;
         self
